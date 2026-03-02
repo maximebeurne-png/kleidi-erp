@@ -274,15 +274,36 @@ async function valider() {
   if(!inputs.length)return;
   const btn=document.getElementById('btnValider');
   btn.disabled=true; btn.textContent='⏳ Création...';
-  let ok=0, err=0;
+  let ok=0, err=0, lastErrorMsg='';
   for(const inp of inputs) {
     try {
-      const r=await fetch(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent('T2 - Lots / Marchés')}`,{method:'POST',headers:{'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({fields:{'Projet':[{id:projetSelectionne.id}],'Lot Type':[{id:inp.dataset.id}],'Budget P0 (€)':parseFloat(inp.value)}})}).then(r=>r.json());
-      r.error?err++:ok++;
-    } catch(e){err++;}
+      const r=await fetch(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent('T2 - Lots / Marchés')}`,{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          fields:{
+            'Projet':[projetSelectionne.id],
+            'Lot Type':[inp.dataset.id],
+            'Budget P0 (€)':parseFloat(inp.value)
+          }
+        })
+      }).then(r=>r.json());
+      
+      if(r.error) {
+        err++;
+        lastErrorMsg = r.error.message || r.error.type;
+      } else {
+        ok++;
+      }
+    } catch(e){
+      err++;
+      lastErrorMsg = e.message;
+    }
   }
-  if(ok>0)showToast(`✓ ${ok} lot${ok>1?'s':''} créé${ok>1?'s':''}`,'success');
-  if(err>0)showToast(`${err} erreur(s)`,'error');
+  
+  if(ok>0) showToast(`✓ ${ok} lot${ok>1?'s':''} créé${ok>1?'s':''}`,'success');
+  if(err>0) showToast(`${err} erreur(s) : ${lastErrorMsg}`,'error');
+  
   btn.textContent='✓ Créer les lots dans T2';
   setTimeout(()=>chargerLots(),1200);
 }
