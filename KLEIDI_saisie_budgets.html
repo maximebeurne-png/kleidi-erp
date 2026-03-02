@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KLEIDI — Saisie Budgets P0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --noir: #1a1a1a; --blanc: #ffffff; --gris-clair: #f5f5f3;
+    --gris-moyen: #e8e8e6; --gris-texte: #6b6b6b;
+    --vert: #4a7c59; --vert-clair: #e8f0eb;
+    --rouge: #c0392b;
+  }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--gris-clair); color: var(--noir); min-height: 100vh; font-size: 13px; }
+
+  .header { background: var(--noir); padding: 0 32px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo { width: 32px; height: 32px; background: var(--blanc); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: var(--noir); }
+  .header-title { color: var(--blanc); font-weight: 600; font-size: 14px; }
+  .header-sub { color: #777; font-size: 12px; margin-left: 4px; }
+
+  .config-panel { background: var(--blanc); border-bottom: 1px solid var(--gris-moyen); padding: 20px 32px; }
+  .config-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--gris-texte); margin-bottom: 12px; }
+  .config-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11px; font-weight: 500; color: var(--gris-texte); }
+  .field input { border: 1px solid var(--gris-moyen); background: var(--gris-clair); color: var(--noir); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: inherit; width: 360px; transition: border-color 0.15s; }
+  .field input:focus { outline: none; border-color: var(--noir); background: var(--blanc); }
+  .field-sm input { width: 200px; }
+
+  .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-dark { background: var(--noir); color: var(--blanc); }
+  .btn-dark:hover { background: #333; }
+  .btn-vert { background: var(--vert); color: var(--blanc); padding: 10px 24px; font-size: 14px; font-weight: 600; }
+  .btn-vert:hover { background: #3d6b4a; }
+  .btn-ghost { background: transparent; color: var(--gris-texte); border: 1px solid var(--gris-moyen); font-size: 12px; padding: 6px 12px; }
+  .btn-ghost:hover { background: var(--gris-clair); color: var(--noir); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .toolbar { background: var(--blanc); border-bottom: 1px solid var(--gris-moyen); padding: 12px 32px; display: flex; align-items: center; gap: 12px; }
+  .toolbar-label { font-size: 12px; font-weight: 500; color: var(--gris-texte); white-space: nowrap; }
+  .select-projet { border: 1px solid var(--gris-moyen); background: var(--blanc); color: var(--noir); padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: inherit; flex: 1; max-width: 440px; cursor: pointer; }
+  .select-projet:focus { outline: none; border-color: var(--noir); }
+  .spacer { flex: 1; }
+  .status-dot { font-size: 11px; color: var(--vert); font-weight: 500; }
+
+  .content { padding: 24px 32px; padding-bottom: 100px; }
+
+  .cat-section { margin-bottom: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .cat-header { background: var(--noir); padding: 11px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .cat-name { color: var(--blanc); font-weight: 600; font-size: 13px; }
+  .cat-meta { color: #777; font-size: 11px; margin-left: 10px; }
+  .cat-subtotal { color: var(--blanc); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+  .table-wrap { background: var(--blanc); }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--gris-clair); }
+  th { padding: 8px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gris-texte); border-bottom: 1px solid var(--gris-moyen); }
+  th.right { text-align: right; }
+  td { padding: 7px 16px; border-bottom: 1px solid var(--gris-clair); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf9; }
+  tr.row-exists td { opacity: 0.5; }
+  .col-num { width: 55px; color: #bbb; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .col-nom { font-weight: 500; }
+  .col-budget { width: 180px; text-align: right; }
+
+  .budget-input { width: 160px; border: 1px solid var(--gris-moyen); background: var(--gris-clair); color: var(--noir); padding: 6px 10px; border-radius: 5px; font-size: 13px; font-family: inherit; text-align: right; transition: all 0.15s; }
+  .budget-input:focus { background: var(--blanc); border-color: var(--noir); outline: none; }
+  .budget-input.filled { background: var(--vert-clair); border-color: var(--vert); color: var(--vert); font-weight: 600; }
+  .budget-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .badge-exists { display: inline-flex; align-items: center; gap: 4px; background: var(--gris-moyen); color: var(--gris-texte); padding: 3px 8px; border-radius: 20px; font-size: 11px; }
+
+  .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--blanc); border-top: 2px solid var(--noir); padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+  .footer-kpis { display: flex; gap: 40px; }
+  .kpi { display: flex; flex-direction: column; gap: 2px; }
+  .kpi-label { font-size: 10px; color: var(--gris-texte); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi-value.green { color: var(--vert); }
+
+  .state { text-align: center; padding: 80px 32px; color: var(--gris-texte); }
+  .state-icon { font-size: 36px; margin-bottom: 16px; }
+  .state-title { font-size: 18px; font-weight: 600; color: var(--noir); margin-bottom: 6px; }
+
+  .toast { position: fixed; top: 68px; right: 20px; padding: 12px 20px; border-radius: 8px; font-weight: 500; font-size: 13px; z-index: 999; display: none; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+  .toast.success { background: var(--vert); color: var(--blanc); }
+  .toast.error { background: var(--rouge); color: var(--blanc); }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .cat-section { animation: fadeUp 0.18s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">K</div>
+    <span class="header-title">ERP KLEIDI</span>
+    <span class="header-sub">/ Saisie Budgets P0</span>
+  </div>
+  <button class="btn btn-ghost" onclick="toggleConfig()">⚙ Config</button>
+</div>
+
+<div class="config-panel" id="configPanel">
+  <div class="config-label">Configuration API Airtable</div>
+  <div class="config-row">
+    <div class="field">
+      <label>Token API</label>
+      <input type="password" id="token" placeholder="patXXXXXX..." />
+    </div>
+    <div class="field field-sm">
+      <label>ID de la base</label>
+      <input type="text" id="baseId" placeholder="appXXXXXX..." />
+    </div>
+    <button class="btn btn-dark" onclick="init()">Connecter →</button>
+  </div>
+</div>
+
+<div class="toolbar" id="toolbar" style="display:none">
+  <span class="toolbar-label">Projet</span>
+  <select class="select-projet" id="projetSelect" onchange="chargerLots()">
+    <option value="">— Sélectionne un projet —</option>
+  </select>
+  <div class="spacer"></div>
+  <span class="status-dot">● Connecté</span>
+</div>
+
+<div class="content" id="content">
+  <div class="state">
+    <div class="state-icon">🏗</div>
+    <div class="state-title">KLEIDI — Saisie des budgets P0</div>
+    <div>Configure la connexion API puis sélectionne un projet</div>
+  </div>
+</div>
+
+<div class="footer-bar" id="footerBar" style="display:none">
+  <div class="footer-kpis">
+    <div class="kpi">
+      <span class="kpi-label">Lots à créer</span>
+      <span class="kpi-value" id="countLots">0</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Total Budget P0</span>
+      <span class="kpi-value green" id="totalP0">0 €</span>
+    </div>
+  </div>
+  <button class="btn btn-vert" onclick="valider()" id="btnValider" disabled>✓ Créer les lots dans T2</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let TOKEN='', BASE_ID='', projets=[], lotTypes=[], lotsExistants=new Set(), projetSelectionne=null;
+
+const API = (table, opts={}, extra={}) => {
+  const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`);
+  Object.entries(extra).forEach(([k,v]) => Array.isArray(v) ? v.forEach(val=>url.searchParams.append(k,val)) : url.searchParams.append(k,v));
+  return fetch(url.toString(), { headers: {'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'}, ...opts }).then(r=>r.json());
+};
+
+async function fetchAll(table, fields) {
+  let records=[], offset;
+  const fa = Array.isArray(fields)?fields:[fields];
+  do {
+    const p={}; fa.forEach((f,i)=>p[`fields[${i}]`]=f); if(offset)p.offset=offset;
+    const r = await API(table,{},p);
+    if(r.error) throw new Error(r.error.message||JSON.stringify(r.error));
+    records=records.concat(r.records||[]);
+    offset=r.offset;
+  } while(offset);
+  return records;
+}
+
+async function init() {
+  TOKEN=document.getElementById('token').value.trim();
+  BASE_ID=document.getElementById('baseId').value.trim();
+  if(!TOKEN||!BASE_ID){showToast('Remplis le token et l\'ID de base','error');return;}
+  setContent('<div class="state"><div class="state-icon">⏳</div><div class="state-title">Connexion...</div></div>');
+  try {
+    const recs = await fetchAll('T1 - Projets',['Projet simplifié','Statut']);
+    projets = recs.filter(r=>r.fields['Statut']!=='Perdu').sort((a,b)=>(b.fields['Projet simplifié']||'').localeCompare(a.fields['Projet simplifié']||''));
+    const sel=document.getElementById('projetSelect');
+    sel.innerHTML='<option value="">— Sélectionne un projet —</option>';
+    projets.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.fields['Projet simplifié']||p.id;sel.appendChild(o);});
+
+    const raw = await fetchAll('T18 - Lots Type',['Lot','Catégorie','Numéro']);
+    lotTypes = raw.sort((a,b)=>{
+      const na=parseFloat(String(a.fields['Numéro']||'999').replace(/[^0-9.]/g,''))||999;
+      const nb=parseFloat(String(b.fields['Numéro']||'999').replace(/[^0-9.]/g,''))||999;
+      return na-nb;
+    });
+
+    document.getElementById('configPanel').style.display='none';
+    document.getElementById('toolbar').style.display='flex';
+    document.getElementById('footerBar').style.display='flex';
+    setContent(`<div class="state"><div class="state-icon">👆</div><div class="state-title">Sélectionne un projet</div><div>${projets.length} projets actifs</div></div>`);
+    showToast(`Connecté — ${projets.length} projets chargés`,'success');
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur : '+e.message,'error');
+    setContent('<div class="state"><div class="state-icon">❌</div><div class="state-title">Erreur de connexion</div><div>Vérifie ton token et ton ID de base</div></div>');
+  }
+}
+
+async function chargerLots() {
+  const id=document.getElementById('projetSelect').value;
+  if(!id){setContent('');return;}
+  projetSelectionne=projets.find(p=>p.id===id);
+  setContent('<div class="state"><div class="state-icon">⏳</div><div class="state-title">Chargement...</div></div>');
+  try {
+    const ex = await fetchAll('T2 - Lots / Marchés',['Projet','Lot Type']);
+    lotsExistants = new Set(ex.filter(r=>r.fields['Projet']?.[0]===id).map(r=>r.fields['Lot Type']?.[0]).filter(Boolean));
+    afficherTableau();
+  } catch(e) { showToast('Erreur : '+e.message,'error'); }
+}
+
+function afficherTableau() {
+  const cats = [
+    {key:'Études', alt:'Etudes', icon:'📐'},
+    {key:'Exécution', alt:'Execution', icon:'🏗'},
+    {key:'Divers', alt:'Divers', icon:'📦'}
+  ];
+  let html='';
+  for(const cat of cats) {
+    const lots = lotTypes.filter(l=>{const c=l.fields['Catégorie'];return c===cat.key||c===cat.alt;});
+    if(!lots.length) continue;
+    const deja = lots.filter(l=>lotsExistants.has(l.id)).length;
+    html+=`<div class="cat-section">
+      <div class="cat-header">
+        <div><span class="cat-name">${cat.icon} ${cat.key}</span><span class="cat-meta">${lots.length} lots${deja>0?' · '+deja+' déjà saisis':''}</span></div>
+        <span class="cat-subtotal" id="sub-${cat.key}"></span>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th class="col-num">N°</th><th>Lot</th><th class="right" style="width:190px">Budget P0 (€)</th></tr></thead>
+        <tbody>`;
+    for(const lot of lots) {
+      const ex=lotsExistants.has(lot.id);
+      html+=`<tr class="${ex?'row-exists':''}">
+        <td class="col-num">${lot.fields['Numéro']||''}</td>
+        <td class="col-nom">${lot.fields['Lot']||''}</td>
+        <td class="col-budget">${ex
+          ?'<span class="badge-exists">✓ Déjà saisi</span>'
+          :`<input class="budget-input" type="number" placeholder="—" min="0" step="100"
+              data-id="${lot.id}" data-cat="${cat.key}"
+              oninput="onInput(this)" />`
+        }</td></tr>`;
+    }
+    html+=`</tbody></table></div></div>`;
+  }
+  setContent(html);
+  majTotaux();
+}
+
+function onInput(el){el.classList.toggle('filled',parseFloat(el.value)>0);majTotaux();}
+
+function majTotaux() {
+  const inputs=document.querySelectorAll('.budget-input');
+  let total=0, count=0; const byCat={};
+  inputs.forEach(inp=>{
+    const v=parseFloat(inp.value)||0, c=inp.dataset.cat;
+    if(!byCat[c])byCat[c]=0;
+    if(v>0){byCat[c]+=v;total+=v;count++;}
+  });
+  Object.entries(byCat).forEach(([c,t])=>{const el=document.getElementById('sub-'+c);if(el)el.textContent=t>0?fmt(t):'';});
+  document.getElementById('totalP0').textContent=fmt(total);
+  document.getElementById('countLots').textContent=count;
+  document.getElementById('btnValider').disabled=count===0;
+}
+
+async function valider() {
+  const inputs=[...document.querySelectorAll('.budget-input')].filter(i=>parseFloat(i.value)>0);
+  if(!inputs.length)return;
+  const btn=document.getElementById('btnValider');
+  btn.disabled=true; btn.textContent='⏳ Création...';
+  let ok=0, err=0;
+  for(const inp of inputs) {
+    try {
+      const r=await fetch(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent('T2 - Lots / Marchés')}`,{method:'POST',headers:{'Authorization':`Bearer ${TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({fields:{'Projet':[{id:projetSelectionne.id}],'Lot Type':[{id:inp.dataset.id}],'Budget P0 (€)':parseFloat(inp.value)}})}).then(r=>r.json());
+      r.error?err++:ok++;
+    } catch(e){err++;}
+  }
+  if(ok>0)showToast(`✓ ${ok} lot${ok>1?'s':''} créé${ok>1?'s':''}`,'success');
+  if(err>0)showToast(`${err} erreur(s)`,'error');
+  btn.textContent='✓ Créer les lots dans T2';
+  setTimeout(()=>chargerLots(),1200);
+}
+
+function fmt(n){return n.toLocaleString('fr-FR',{maximumFractionDigits:0})+' €';}
+function setContent(h){document.getElementById('content').innerHTML=h;}
+function showToast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3500);}
+function toggleConfig(){const p=document.getElementById('configPanel');p.style.display=p.style.display==='none'?'block':'none';}
+</script>
+</body>
+</html>
